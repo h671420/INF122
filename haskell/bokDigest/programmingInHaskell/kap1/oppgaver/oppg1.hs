@@ -1,4 +1,4 @@
---OK kk
+--OK kk kk!
 {-
 Ble litt usikker, hva med en halvlat versjon? innvendig -> utvendig -> repeat
 double (double 2)
