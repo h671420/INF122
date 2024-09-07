@@ -1,4 +1,4 @@
-
+--oppg1 
 oppg1a  :: String
 oppg1a = ['a','b','c']
 
