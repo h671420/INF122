@@ -72,13 +72,14 @@
     merge :: Ord a => [a] -> [a] -> [a]
     merge a [] = a
     merge [] a = a
-    merge (a:as) (b:bs) | a<b = a:b: merge as bs
-                        |otherwise = b:a:merge as bs
+    merge (a:as) (b:bs) | a<b = a: merge as (b:bs)
+                        |otherwise = b: merge (a:as) bs
+    
+    halve :: [a]->([a],[a])
+    halve li = splitAt (div (length li) 2) li
     
     msort :: Ord a => [a] -> [a]
     msort li    | length li <2 = li
-                | otherwise = merge (msort (fst (splitAt 2 li))) (msort (snd (splitAt 2 li)))
+                | otherwise = merge (msort (fst (halve li))) (msort (snd (halve li)))
     
-    li = [5,6,8,2,5]
-
-    
+    li = [5,6,8,2,1,7]
