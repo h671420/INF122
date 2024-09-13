@@ -12,19 +12,19 @@
             | otherwise = n * fact (n-1)
 
 --oppg2
-    sumdown -> Int ->Int
+    sumdown :: Int ->Int
     sumdown 0 = 0
     sumdown n = n+ sumdown (n-1)
 
 --oppg3
-    (^) :: Int -> Int -> Int
-    g^0 = 1
-    g^e = g * g^(e-1)
+    (^*) :: Int -> Int -> Int
+    g^*0 = 1
+    g^*e = g * g^*(e-1)
 
 --oppg4
     euclidGCD :: Int -> Int -> Int
-    euclidGDC a b   | a == b = a
-                    | euclidGDC (min a b) ((max a b) - (min a b))
+    euclidGCD a b   | a == b = a
+                    | otherwise = euclidGCD (min a b) (max a b - min a b)
 
 --oppg5
     {-
@@ -50,11 +50,11 @@
 --oppg6
     myAnd :: [Bool] -> Bool
     myAnd [] = True
-    myAnd x:xs = x && myAnd xs
+    myAnd (x:xs) = x && myAnd xs
 
     myConcat :: [[a]]->[a]
-    myConcat []:xss = myConcat xss
-    myConcat (x:xs):xss = x:(myConcat xs:xss)
+    myConcat ([]:xss) = myConcat xss
+    myConcat ((x:xs):xss) = x:myConcat (xs:xss)
     
     myRepl :: Int -> a -> [a]
     myRepl 0 val = []
@@ -62,16 +62,23 @@
 
     (!!*) :: [a] -> Int -> a
     list !!* 0 = head list
-    list !!* n = (tail list) !!* (n-1)
+    list !!* n = tail list !!* (n-1)
 
-    elem :: Eq a => a -> [a] -> Bool
-    elem val x:xs   | x == val = True
-                    | otherwise = elem val xs
+    findelem :: Eq a => a -> [a] -> Bool
+    findelem val (x:xs) | x == val = True
+                    | otherwise = findelem val xs
 
 --oppg7
     merge :: Ord a => [a] -> [a] -> [a]
     merge a [] = a
     merge [] a = a
-    merge a:as b:bs | a<b = a:b: (merge as bs)
-                     otherwise = b:a:(merge as bs)
-                     
+    merge (a:as) (b:bs) | a<b = a:b: merge as bs
+                        |otherwise = b:a:merge as bs
+    
+    msort :: Ord a => [a] -> [a]
+    msort li    | length li <2 = li
+                | otherwise = merge (msort (fst (splitAt 2 li))) (msort (snd (splitAt 2 li)))
+    
+    li = [5,6,8,2,5]
+
+    

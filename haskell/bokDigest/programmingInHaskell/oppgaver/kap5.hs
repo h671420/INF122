@@ -27,7 +27,10 @@
     --skipp
 
 --oppg8
-    --skipp
+    positions :: Eq e=> e -> [e] -> [Int]
+    positions e es = find e (zip es [0..]) where
+        find :: Eq k => k ->[(k,v)] -> [v]
+        find k pairs = [v | (k',v)<-pairs,k==k']
 
 --oppg9
     scalarproduct :: [Int]->[Int]->Int
