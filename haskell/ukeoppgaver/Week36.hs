@@ -1,5 +1,4 @@
 
-
 module Week36 where
 
 palindrome :: (Eq a) => [a] -> Bool

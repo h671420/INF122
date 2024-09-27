@@ -17,8 +17,9 @@ mapF f li = foldr ((:).f) [] li
 
 and1, and2 :: [Bool] -> Bool
 and1 = foldr (&&) True
-
 and2 = foldl (&&) True
+trues = [True|x<-[1..]]
+liez = [False|x<-[1..]]
 
 counterExample :: [Bool]
 counterExample = undefined
