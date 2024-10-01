@@ -5,18 +5,6 @@ import Distribution.Simple.Setup (falseArg)
 data Set a = Empty | Singleton a | Union (Set a) (Set a)
     deriving (Eq, Show)
 
-{--
-unique :: Eq a => [a] -> [a]
-unique li 
-    | null li = li
-    | head li `isIn` tail li = unique (tail li)
-    | otherwise = head li:unique (tail li) where
-        isIn :: Eq a => a -> [a] -> Bool
-        isIn x xs
-            |null xs = False
-            |otherwise = x == head xs || isIn x (tail xs)  
---}
-
 fromList :: [a] -> Set a
 fromList a
     | null a = Empty
@@ -37,7 +25,7 @@ isIn a (Union b c ) = isIn a b || isIn a c
 subset :: Eq a => Set a -> Set a -> Bool
 subset Empty b = True
 subset (Singleton a) b = isIn a b
-subset (Union (Singleton a) c) b = isIn a b && subset c b
+subset (Union a c) b = subset a b && subset c b
 
 setEq :: Eq a => Set a -> Set a -> Bool
 setEq a b =  subset a b && subset b a
