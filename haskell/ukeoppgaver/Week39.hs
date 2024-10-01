@@ -11,10 +11,6 @@ fromList a
     | null (tail a) = Singleton (head a)
     | otherwise = Union (Singleton (head a)) (fromList (tail a))
 
-a = fromList [1,1,2]
-b = fromList [2,2,3]
-empt = fromList []
-zeros = fromList [0,0,0,0]
 
 isIn :: Eq a => a -> Set a -> Bool
 isIn a Empty = False
@@ -23,7 +19,8 @@ isIn a (Union b c ) = isIn a b || isIn a c
 
 
 subset :: Eq a => Set a -> Set a -> Bool
-subset Empty b = True
+
+subset Empty _ = True
 subset (Singleton a) b = isIn a b
 subset (Union a c) b = subset a b && subset c b
 
@@ -51,3 +48,21 @@ isInF a = foldSet False (a==) (||)
 
 subsetF :: Eq a => Set a -> Set a -> Bool
 subsetF set1 set2 = foldSet True (`isInF` set2) (&&) set1
+
+
+{--
+
+hvorfor funker den ene men ikke den andre? waah
+subset = subsetF
+
+subset Empty _ = True
+subset (Singleton a) b = isIn a b
+subset (Union (Singleton a) c) b = subset a b && subset c b
+
+
+foldSet acc _ _ Empty = acc
+foldSet _ fc2 _ (Singleton b) = fc2 b
+foldSet acc fc2 fc3 (Union a b) = fc3 (foldSet acc fc2 fc3 a) (foldSet acc fc2 fc3 b)
+
+subsetF set1 set2 = foldSet True (`isInF` set2) (&&) set1
+--}
