@@ -29,18 +29,99 @@ fromToken token
 
 
 --spm2
+{--
 parseTerm :: [String] -> (Ast , [String])
 parseTerm (token:tokens)
     | and [isNumber c|c<-token] = (Tall (read token::Int) , tokens)
-
+--}
+parseTerm :: [String] -> (Ast , [String])
+parseTerm (token:tokens)
+    | token == "(" = parseExpr (reverse (drop 1 (reverse tokens)) )
+    | and [isNumber c|c<-token] = (Tall (read token::Int) , tokens)
 
 --spm3
+{--
 parseFactor :: [String] -> (Ast , [String])
 parseFactor (x:[]) = (fst (parseTerm [x]),[])
 parseFactor (te:op:rem) = (BinOp (fromToken op) (Tall (read te::Int)) (fst (parseFactor rem)),[])
+--}
+parseFactor :: [String] -> (Ast , [String])
+parseFactor tokens
+    | (getLeft tokens) == tokens = parseTerm tokens
+    | otherwise = (BinOp (fromToken (getOp tokens)) (fst (parseTerm (getLeft tokens))) (fst (parseFactor (getRight tokens))),[])
+         where  
+            getLeft :: [String] -> [String]
+            getLeft = getLeft' 0
+                where
+                    getLeft' :: Int -> [String] -> [String]
+                    getLeft' _ [] = [] 
+                    getLeft' level (x:xs)
+                        | x == "(" = x : getLeft' (level + 1) xs  
+                        | x == ")" = x : getLeft' (level - 1) xs  
+                        | (x == "*" || x == "/") && level == 0 = []  
+                        | otherwise = x : getLeft' level xs  
 
+            getOp :: [String] -> String
+            getOp = getOp' 0
+                where
+                    getOp' :: Int -> [String] -> String
+                    getOp' _ [] = error "No operator found"  
+                    getOp' level (x:xs)
+                        | x == "(" = getOp' (level + 1) xs
+                        | x == ")" = getOp' (level - 1) xs
+                        | (x == "*" || x == "/") && level == 0 = x
+                        | otherwise = getOp' level xs
+
+            getRight :: [String] -> [String]
+            getRight = getRight' 0
+                where
+                    getRight' :: Int -> [String] -> [String]
+                    getRight' _ [] = []  
+                    getRight' level (x:xs)
+                        | x == "(" = getRight' (level + 1) xs
+                        | x == ")" = getRight' (level - 1) xs
+                        | (x == "*" || x == "/") && level == 0 = xs  
+                        | otherwise = getRight' level xs
 
 --spm4
+parseExpr :: [String] -> (Ast , [String])
+parseExpr tokens
+    | (getLeft tokens) == tokens = parseFactor tokens
+    | otherwise = (BinOp (fromToken (getOp tokens)) (fst (parseFactor (getLeft tokens))) (fst (parseExpr (getRight tokens))),[])
+         where  
+            getLeft :: [String] -> [String]
+            getLeft = getLeft' 0
+                where
+                    getLeft' :: Int -> [String] -> [String]
+                    getLeft' _ [] = [] 
+                    getLeft' level (x:xs)
+                        | x == "(" = x : getLeft' (level + 1) xs  
+                        | x == ")" = x : getLeft' (level - 1) xs  
+                        | (x == "-" || x == "+") && level == 0 = []  
+                        | otherwise = x : getLeft' level xs  
+
+            getOp :: [String] -> String
+            getOp = getOp' 0
+                where
+                    getOp' :: Int -> [String] -> String
+                    getOp' _ [] = error "No operator found"  
+                    getOp' level (x:xs)
+                        | x == "(" = getOp' (level + 1) xs
+                        | x == ")" = getOp' (level - 1) xs
+                        | (x == "-" || x == "+") && level == 0 = x
+                        | otherwise = getOp' level xs
+
+            getRight :: [String] -> [String]
+            getRight = getRight' 0
+                where
+                    getRight' :: Int -> [String] -> [String]
+                    getRight' _ [] = []  
+                    getRight' level (x:xs)
+                        | x == "(" = getRight' (level + 1) xs
+                        | x == ")" = getRight' (level - 1) xs
+                        | (x == "-" || x == "+") && level == 0 = xs  
+                        | otherwise = getRight' level xs
+
 {--
 parseExpr :: [String] -> (Ast , [String])
 parseExpr tokens
@@ -54,49 +135,6 @@ parseExpr tokens
             getRight :: [String] -> [String]
             getRight tokens = tail (dropWhile (\x -> x /="-" && x /="+") tokens)
 --}
-parseExpr :: [String] -> (Ast , [String])
-parseExpr tokens
-    | (getLeft tokens) == tokens = parseFactor tokens
-    | otherwise = (BinOp (fromToken (getOp tokens)) (fst (parseFactor (getLeft tokens))) (fst (parseExpr (getRight tokens))),[])
-         where  
-            getLeft :: [String] -> [String]
-            getLeft = getLeft' 0
-                where
-                    getLeft' :: Int -> [String] -> [String]
-                    getLeft' _ [] = []  -- End of tokens
-                    getLeft' 0 (x:xs)
-                        | x == "-" || x == "+" = []  
-                        | otherwise = x : getLeft' 0 xs
-                    getLeft' level (x:xs)
-                        | x == "(" = x : getLeft' (level + 1) xs  
-                        | x == ")" = x : getLeft' (level - 1) xs  
-                        | otherwise = x : getLeft' level xs  
-
-            getOp :: [String] -> String
-            getOp = getOp' 0
-                where
-                    getOp' :: Int -> [String] -> String
-                    getOp' _ [] = error "No operator found"  -- Error case when no operator is found
-                    getOp' 0 (x:xs)
-                        | x == "-" || x == "+" = x  -- Return the first `-` or `+` at base level
-                        | otherwise = getOp' 0 xs
-                    getOp' level (x:xs)
-                        | x == "(" = getOp' (level + 1) xs  -- Increment level inside parentheses
-                        | x == ")" = getOp' (level - 1) xs  -- Decrement level when leaving parentheses
-                        | otherwise = getOp' level xs
-
-            getRight :: [String] -> [String]
-            getRight = getRight' 0
-                where
-                    getRight' :: Int -> [String] -> [String]
-                    getRight' _ [] = []  -- No more tokens to process
-                    getRight' 0 (x:xs)
-                        | x == "-" || x == "+" = xs  -- Skip the first `-` or `+` at base level, and return the rest
-                        | otherwise = getRight' 0 xs
-                    getRight' level (x:xs)
-                        | x == "(" = getRight' (level + 1) xs  -- Increment level inside parentheses
-                        | x == ")" = getRight' (level - 1) xs  -- Decrement level when leaving parentheses
-                        | otherwise = getRight' level xs
 
 
 --spm5
@@ -145,8 +183,40 @@ ppOPN (BinOp op v h )
 
 
 
+getLeft :: [String] -> [String]
+getLeft = getLeft' 0
+    where
+        getLeft' :: Int -> [String] -> [String]
+        getLeft' _ [] = [] 
+        getLeft' level (x:xs)
+            | x == "(" = x : getLeft' (level + 1) xs  
+            | x == ")" = x : getLeft' (level - 1) xs  
+            | (x == "-" || x == "+") && level == 0 = []  
+            | otherwise = x : getLeft' level xs  
 
+getOp :: [String] -> String
+getOp = getOp' 0
+    where
+        getOp' :: Int -> [String] -> String
+        getOp' _ [] = error "No operator found"  
+        getOp' level (x:xs)
+            | x == "(" = getOp' (level + 1) xs
+            | x == ")" = getOp' (level - 1) xs
+            | (x == "-" || x == "+") && level == 0 = x
+            | otherwise = getOp' level xs
 
+getRight :: [String] -> [String]
+getRight = getRight' 0
+    where
+        getRight' :: Int -> [String] -> [String]
+        getRight' _ [] = []  
+        getRight' level (x:xs)
+            | x == "(" = getRight' (level + 1) xs
+            | x == ")" = getRight' (level - 1) xs
+            | (x == "-" || x == "+") && level == 0 = xs  
+            | otherwise = getRight' level xs
+
+tokens = tokenise "(22-1)*2+8*2"
 
 
 
