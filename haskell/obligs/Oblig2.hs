@@ -49,7 +49,6 @@ re3 (c:cs)
   |c == '(' = (fst (reg (fst (getExpr (c:cs)))), snd (getExpr (c:cs)))
   |otherwise = (Atom c, cs)
 
-{--split' ([],string)--}
 getExpr :: String -> (String, String)
 getExpr string = (reverse (tail (reverse (tail (fst (split' ([],string) 0))))), snd (split' ([],string) 0))  
   where
@@ -64,16 +63,31 @@ getExpr string = (reverse (tail (reverse (tail (fst (split' ([],string) 0))))), 
 type Transition = String -> [(String,String)]
 
 matchChar :: Char -> Transition
-matchChar = undefined
+matchChar c = mc c where
+  mc :: Char -> String -> [(String, String)]
+  mc c str
+    | null str = []
+    | c == head str = [([c], tail str)]
+    | otherwise = []
 
 matchAny :: Transition
-matchAny = undefined
+matchAny = split where
+  split :: String -> [(String, String)]
+  split str 
+    |null str = []
+    |otherwise = [(take 1 str, tail str)]
 
 matchEmpty :: Transition
-matchEmpty = undefined
+matchEmpty = split where
+  split :: String -> [(String, String)]
+  split str 
+    |null str = []
+    |otherwise = [("", str)]
 
 matchBoth :: Transition -> Transition -> Transition
-matchBoth = undefined
+matchBoth = mb where
+  mb :: Transition -> Transition -> Transition
+  mb tr1 tr2 = undefined
 
 matchAfter :: Transition -> Transition -> Transition
 matchAfter = undefined

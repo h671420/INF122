@@ -14,85 +14,68 @@ readFile' f = do
 #endif
 
 
-
-data Regex = Atom Char       -- Single character
-           | After Regex Regex  -- Concatenation (sequence)
-           | Both Regex Regex   -- Alternation (either one or the other)
-           | Kleene Regex       -- Kleene star (zero or more repetitions)
-           | Empty              -- Empty regex
-           | Any                -- Matches any character (.)
+data Regex = Atom Char | Both Regex Regex | After Regex Regex | Kleene Regex | Empty | Any
   deriving (Show, Eq)
 
--- Parsing a complete regex, handling sequences of `Re1`
-reg :: String -> (Regex, String)
-reg "" = (Empty, "")
-reg input =
-    let (firstRe1, rest) = re1 input
-    in case rest of
-        "" -> (firstRe1, "")
-        _  -> let (nextReg, remaining) = reg rest
-              in (After firstRe1 nextReg, remaining)  -- Concatenation in sequence
+reg, re1, re2, re3 :: String -> (Regex, String)
 
--- Parsing `Re1`, which checks for Kleene star on `Re2`
-re1 :: String -> (Regex, String)
+reg input
+  | null input = (Empty, input)
+  | otherwise = 
+    case rest of 
+      "" -> (reg1, rest)
+      _ -> (After reg1 reg2, remaining) 
+  where
+    (reg1, rest) = re1 input
+    (reg2, remaining) = reg rest
+
 re1 input =
-    let (parsedRe2, rest) = re2 input
-    in case rest of
-        ('*':xs) -> (Kleene parsedRe2, xs)  -- Kleene star applied
-        _ -> (parsedRe2, rest)
+  case rest of 
+    ('*':xs) -> (Kleene reg1, xs)
+    _ -> (reg1, rest)
+  where
+    (reg1, rest) = re2 input
 
--- Parsing `Re2`, which checks for alternation (|)
-re2 :: String -> (Regex, String)
 re2 input =
-    let (parsedRe3, rest) = re3 input
-    in case rest of
-        ('|':xs) -> 
-            let (nextRe2, remaining) = re2 xs
-            in (Both parsedRe3 nextRe2, remaining)  -- Alternation (either-or)
-        _ -> (parsedRe3, rest)
+  case rest of 
+    ('|':xs) -> (Both reg1 reg2, remainder)
+    _ -> (reg1, rest)
+  where
+    (reg1, rest) = re3 input
+    (reg2, remainder) = re3 (tail rest)
+  
+re3 (c:cs) 
+  |c == '.' = (Any, cs)
+  |c == '(' = (fst (reg (fst (getExpr (c:cs)))), snd (getExpr (c:cs)))
+  |otherwise = (Atom c, cs)
 
--- Parsing `Re3`, which handles individual atoms, dots, and groups in parentheses
-re3 :: String -> (Regex, String)
-re3 (c:cs)
-    | c == '.' = (Any, cs)  -- `.` matches any character
-    | c == '(' = 
-        let (insideGroup, rest) = reg cs
-        in case rest of
-            (')':xs) -> (insideGroup, xs)  -- Match and close parentheses
-            _ -> error "Unmatched parenthesis"
-    | otherwise = (Atom c, cs)  -- Single character atom
-re3 [] = (Empty, [])  -- Empty input returns `Empty`
-
-
-
-
-{--  
-re1 inp
-    | (getLeft inp operators) == inp = re2 inp
-    | otherwise = (Kleene (fst (re2 (getLeft inp operators))) ,[])
-         where  
-            operators = "*"
-
-
-re2 inp
-    | (getLeft inp operators) == inp = re3 inp
-    | otherwise = (Both (fst (re3 (getLeft inp operators))) (fst (reg (getRight inp operators))) ,[])
-         where  
-            operators = "|"
-
-re3 inp
-  | (head inp) == '.' = (Any ,[])
-  | (head inp) == '(' = reg (reverse(tail(reverse(tail inp))))
-  | otherwise = (Atom (head inp),[])
---}
+getExpr :: String -> (String, String)
+getExpr string = (reverse (tail (reverse (tail (fst (split' ([],string) 0))))), snd (split' ([],string) 0))  
+  where
+    split' :: (String, String) -> Int -> (String , String)
+    split' (out, input) level 
+      | not (null input) && (head input) == '(' && level >=0  = split' (head input:out, tail input) (level + 1) 
+      | not (null input) && (head input) == ')' && level == 1 = split' (head input:out, tail input) (level - 2)  
+      | not (null input) && (head input) == ')' = split' (head input:out, tail input) (level - 1)  
+      | level <= 0 = (reverse(out), input)
+      | otherwise = split' (head input:out, tail input) level
 
 type Transition = String -> [(String,String)]
 
 matchChar :: Char -> Transition
-matchChar = undefined
+matchChar c = mc c where
+  mc :: Char -> String -> [(String, String)]
+  mc c str
+    | null str = []
+    | c == head str = [([c], tail str)]
+    | otherwise = []
 
 matchAny :: Transition
-matchAny = undefined
+matchAny = split where
+  split :: String -> [(String, String)]
+  split str 
+    |null str = []
+    |otherwise = [(take 1 str, tail str)]
 
 matchEmpty :: Transition
 matchEmpty = undefined
@@ -123,64 +106,3 @@ grep = undefined
 
 sed :: String -> (String -> String) -> FilePath -> FilePath -> IO ()
 sed = undefined
-
-{--
-getLeft :: String -> String-> String
-getLeft symbols operators = getLeft' 0 symbols operators
-    where
-        getLeft' :: Int -> String -> String -> String
-        getLeft' _ [] _ = [] 
-        getLeft' level (x:xs) operators
-            | x == '(' = x : getLeft' (level + 1) xs operators
-            | x == ')' = x : getLeft' (level - 1) xs operators
-            | (x `isIn` operators) && level == 0 = []  
-            | otherwise = x : getLeft' level xs operators
-
-
-getLeft :: String -> String-> String
-getLeft tokens operators = getLeft' 0 tokens operators
-    where
-        getLeft' :: Int -> String -> String -> String
-        getLeft' _ [] _ = [] 
-        getLeft' level (x:xs) operators
-            | x == '(' = x : getLeft' (level + 1) xs operators
-            | x == ')' = x : getLeft' (level - 1) xs operators
-            | (x `isIn` operators) && level == 0 = []  
-            | otherwise = x : getLeft' level xs operators
-
-getRest :: String -> String-> String
-getRest tokens operators = getRest' 0 tokens operators
-    where
-        getRest' :: Int -> String -> String-> String
-        getRest' _ [] _ = [] 
-        getRest' level (x:xs) operators
-            | x == '(' = getRest' (level + 1) xs operators
-            | x == ')' = getRest' (level - 1) xs operators
-            | (x `isIn` operators) && level == 0 = x:xs
-            | otherwise = getRest' level xs operators
-
-getOp :: String -> String-> Char
-getOp tokens operators = head (getRest tokens operators)
-
-getRight :: String -> String-> String
-getRight tokens operators = tail (getRest tokens operators)
---}
-isIn :: Char -> String -> Bool
-isIn string [] = False
-isIn string (head:tail) = string == head || isIn string tail
-
-
-{--
-'(' '_' -> pass
-
---}
-
-getParanthesis :: String -> (String , String)
-getParanthesis string = split' ([],string) 0
-  where
-    split' :: (String, String) -> Int -> (String , String)
-    split' (out, input) level 
-      | not (null input) && (head input) == '(' = split' (head input:out, tail input) (level + 1) 
-      | not (null input) && (head input) == ')' = split' (head input:out, tail input) (level - 1)  
-      | level == 0 = (reverse(out), input)
-      | otherwise = split' (head input:out, tail input) level
