@@ -81,22 +81,35 @@ matchEmpty :: Transition
 matchEmpty = split where
   split :: String -> [(String, String)]
   split str 
-    |null str = []
     |otherwise = [("", str)]
 
 matchBoth :: Transition -> Transition -> Transition
-matchBoth = mb where
-  mb :: Transition -> Transition -> Transition
-  mb tr1 tr2 = undefined
+matchBoth t1 t2 = \string -> t1 string ++ t2 string
 
 matchAfter :: Transition -> Transition -> Transition
-matchAfter = undefined
+matchAfter t1 t2 = \string ->
+  if null (t1 string) then []
+  else let (fst1, snd1) = head (t1 string)
+       in if null (t2 snd1) then []
+          else let (fst2, snd2) = head (t2 snd1)
+               in [(fst1 ++ fst2, snd2)]
 
 regex2trans :: Regex -> Transition
+{--
 regex2trans = undefined
+--}
+regex2trans (Atom c)      = matchChar c
+regex2trans (Both r1 r2)  = matchBoth (regex2trans r1) (regex2trans r2)
+regex2trans (After r1 r2) = matchAfter (regex2trans r1) (regex2trans r2)
+regex2trans (Kleene r)    = undefined
+regex2trans Empty         = matchEmpty
+regex2trans Any           = matchAny
 
 longest :: [String] -> String
-longest = undefined
+longest list = longest' "" list where  
+  longest' :: String -> [String] -> String
+  longest' str [] = str
+  longest' str (x:xs) = if length x > length str then longest' x xs else longest' str xs
 
 matchStart :: String -> String -> String
 matchStart = undefined
